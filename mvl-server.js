@@ -5,11 +5,12 @@ var io = require('socket.io')(http);
 
 var port = process.env.PORT || 3000;
 
-var availableRooms = [];
+var availableRooms = {};
 var gamePairs = {};
+
 function printRooms(){
   console.log(' _____________________________________');
-  console.log('|| available rooms : ' + availableRooms);
+  console.log('|| available rooms : ' + JSON.stringify(availableRooms));
   console.log('||      game pairs : ' + JSON.stringify(gamePairs));
   console.log(' -------------------------------------');
 };
@@ -20,34 +21,32 @@ io.on('connection', function(socket){
     socket.emit('available rooms', availableRooms);
   })
 
-  socket.on('mario start', function() {
-    console.log('Mario started a game, adding room ' + socket.id);
-    availableRooms.push(socket.id);
+  socket.on('mario start', function(roomName, gameHeight) {
+    if (!roomName) roomName = socket.id;
+    console.log('Mario started a game, adding room ' + socket.id + " with name " + roomName);
+    availableRooms[socket.id] = { name: roomName, height: gameHeight };
     printRooms();
   })
 
-  socket.on('luigi join', function(room) {
-  	console.log('Luigi joined mario in room ' + room);
-    var index = availableRooms.indexOf(room);
-    if (index > -1) {
-      var marioRoom = availableRooms.splice(index, 1);
-      var luigiSocket = socket.id;
-      gamePairs[marioRoom] = luigiSocket;
-      gamePairs[luigiSocket] = marioRoom;
-    }
+  socket.on('luigi join', function(roomID) {
+  	console.log('Luigi joined mario in room ' + roomID);
+    var luigiSocket = socket.id;
+    gamePairs[roomID] = luigiSocket;
+    gamePairs[luigiSocket] = roomID;
+    delete availableRooms[roomID];
     printRooms();
-    io.to(room).emit('luigi enter');
+    io.to(roomID).emit('luigi enter');
   })
 
   socket.on('disconnect', function(){
     console.log('disconnected: ' + socket.id);
-    var room = socket.id;
-    var index = availableRooms.indexOf(room);
-    if ( index > -1 ) {
-          console.log('a mario disconnected, no game in progress: ' + room);
-          availableRooms.splice(index, 1);
+    var roomID = socket.id;
+    var availableRoom = availableRooms[roomID];
+    if ( availableRoom ) {
+          console.log('a mario disconnected, no game in progress: ' + roomID);
+          delete availableRooms[roomID];
     } else {
-        var disconnectedPlayersPartner = gamePairs[room];
+        var disconnectedPlayersPartner = gamePairs[roomID];
         var disconnectedPlayer = gamePairs[disconnectedPlayersPartner];
         console.log('someone disconnected, ' + disconnectedPlayersPartner + ' will be notified!');
         io.to(disconnectedPlayersPartner).emit('partner exit')
