@@ -60,16 +60,20 @@ io.on('connection', function(socket){
 
   socket.on('player move', function(position) {
     var playerId = socket.id;
-//    console.log(playerId + ': Player moved to position ' + JSON.stringify(position));
     var partner = gamePairs[playerId]
     io.to(partner).emit('partner move', position)
   })
 
   socket.on('player bullets', function(bullets) {
     var playerId = socket.id;
-//    console.log(playerId + ': Player moved to position ' + JSON.stringify(position));
     var partner = gamePairs[playerId]
     io.to(partner).emit('partner bullets', bullets)
+  })
+
+  socket.on('kill', function(bullets) {
+    var playerId = socket.id;
+    var partner = gamePairs[playerId]
+    io.to(partner).emit('die')
   })
 });
 
