@@ -21,10 +21,10 @@ io.on('connection', function(socket){
     socket.emit('available rooms', availableRooms);
   })
 
-  socket.on('mario start', function(roomName, gameHeight) {
+  socket.on('mario start', function(roomName, gameHeight, gameWidth) {
     if (!roomName) roomName = socket.id;
     console.log('Mario started a game, adding room ' + socket.id + " with name " + roomName);
-    availableRooms[socket.id] = { name: roomName, height: gameHeight };
+    availableRooms[socket.id] = { name: roomName, height: gameHeight, width: gameWidth };
     printRooms();
   })
 
